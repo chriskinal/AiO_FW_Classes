@@ -5,7 +5,7 @@
 class um982 {
     public:
         um982(Stream* gpsPort);
-        bool poll();
+        const char* poll();
 
         struct GGA_DATA
         {
@@ -21,6 +21,21 @@ class um982 {
             char ageDGPS[10];
         };
         GGA_DATA GGA;
+        struct VTG_DATA
+        {
+            char heading[12];
+            char speedKnots[10];
+            float speed;
+        };
+        VTG_DATA VTG;
+
+        struct HPR_DATA
+        {
+            char heading[8];
+            char roll[8];
+            int solQuality;
+        };
+        HPR_DATA HPR;
 
     private:
         Stream* gpsPort;

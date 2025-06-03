@@ -26,8 +26,20 @@ void setup()
 }
 
 void loop() {
-  if (gps1.poll()){
-    Serial.println("Got retflag");
+  //Serial.println(gps1.poll());
+  if (gps1.poll() == "GGA"){
+    Serial.println("Got GGA");
     Serial.println(gps1.GGA.latitude);
   }
+  if (gps1.poll() == "VTG")
+  {
+    Serial.println("Got VTG");
+    Serial.println(gps1.VTG.heading);
+  }
+  if (gps1.poll() == "HPR")
+  {
+    Serial.println("Got HPR");
+    Serial.println(gps1.HPR.roll);
+  }
+  //delay(1);
 }
