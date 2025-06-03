@@ -1,13 +1,6 @@
 #include"Arduino.h"
 #include "um982.h"
 
-char msgBuf[384];
-int msgBufLen = 0;
-bool gotDollar = false;
-bool gotCR = false;
-bool gotLF = false;
-int retVal = 0;
-
 um982::um982(Stream* gpsPort) : gpsPort(gpsPort) {}
 
 const char* um982::poll(){
@@ -58,17 +51,30 @@ const char* um982::poll(){
         //     Serial.println(argv[i]);
         // }
         if (strstr(argv[0], "GGA")) {
+        strcpy(GGA.fixTime, argv[1]);
         strcpy(GGA.latitude, argv[2]);
+        strcpy(GGA.latNS, argv[3]);
+        strcpy(GGA.longitude, argv[4]);
+        strcpy(GGA.lonEW, argv[5]);
+        strcpy(GGA.fixQuality, argv[6]);
+        strcpy(GGA.numSats, argv[7]);
+        strcpy(GGA.HDOP, argv[8]);
+        strcpy(GGA.altitude, argv[9]);
+        strcpy(GGA.ageDGPS, argv[13]);
         retVal = 1;
         }
         if (strstr(argv[0], "VTG"))
         {
-            strcpy(VTG.heading, argv[3]);
+            strcpy(VTG.heading, argv[1]);
+            strcpy(VTG.speedKnots, argv[5]);
+            VTG.speed = atof(argv[5]) * 1852 / 3600; // m/s
             retVal = 2;
         }
         if (strstr(argv[0], "HPR"))
         {
-            strcpy(HPR.heading, argv[3]);
+            strcpy(HPR.heading, argv[2]);
+            strcpy(HPR.roll, argv[3]);
+            HPR.solQuality = atoi(argv[5]);
             retVal = 3;
         }
         // Reset parser
@@ -79,10 +85,15 @@ const char* um982::poll(){
         memset(msgBuf, 0, 384);
         msgBufLen = 0;
     }
-    switch (retVal){
-        case 0: return "";
-        case 1: return "GGA";
-        case 2: return "VTG";
-        case 3: return "HPR";
+    switch (retVal)
+    {
+    case 0:
+        return "";
+    case 1:
+        return "GGA";
+    case 2:
+        return "VTG";
+    case 3:
+        return "HPR";
     }
 }

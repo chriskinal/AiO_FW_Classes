@@ -26,20 +26,22 @@ void setup()
 }
 
 void loop() {
-  //Serial.println(gps1.poll());
   if (gps1.poll() == "GGA"){
-    Serial.println("Got GGA");
-    Serial.println(gps1.GGA.latitude);
+    Serial.println(millis());
+    // Serial.print("Got GGA:");
+    // Serial.println(millis());
+    // Serial.println(gps1.GGA.fixTime);
   }
   if (gps1.poll() == "VTG")
   {
-    Serial.println("Got VTG");
+    Serial.print("Got VTG: ");
+    Serial.println(millis());
     Serial.println(gps1.VTG.heading);
   }
   if (gps1.poll() == "HPR")
   {
-    Serial.println("Got HPR");
+    Serial.print("Got HPR: ");
+    Serial.println(millis());
     Serial.println(gps1.HPR.roll);
   }
-  //delay(1);
 }

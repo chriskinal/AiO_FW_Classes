@@ -39,5 +39,11 @@ class um982 {
 
     private:
         Stream* gpsPort;
+        char msgBuf[384];
+        int msgBufLen = 0;
+        bool gotDollar = false;
+        bool gotCR = false;
+        bool gotLF = false;
+        int retVal = 0;
 };
 #endif
