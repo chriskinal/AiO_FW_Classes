@@ -26,5 +26,8 @@ void setup()
 }
 
 void loop() {
-  gps1.poll();
+  if (gps1.poll()){
+    Serial.println("Got retflag");
+    Serial.println(gps1.GGA.latitude);
+  }
 }

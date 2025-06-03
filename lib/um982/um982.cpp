@@ -6,11 +6,12 @@ int msgBufLen = 0;
 bool gotDollar = false;
 bool gotCR = false;
 bool gotLF = false;
+bool ggaFlag = false;
 
 um982::um982(Stream* gpsPort) : gpsPort(gpsPort) {}
 
-void um982::poll(){
-    
+bool um982::poll(){
+    ggaFlag = false;
     if (gpsPort->available())
     {
         char inChar = gpsPort->read();
@@ -52,16 +53,21 @@ void um982::poll(){
             argc++;
             argv[argc] = strsep(&bufptr, "*;,");
         }
-        for ( int i = 0; i <= argc - 1; i++)
-        {
-            Serial.println(argv[i]);
+        // for ( int i = 0; i <= argc - 1; i++)
+        // {
+        //     Serial.println(argv[i]);
+        // }
+        if (strstr(argv[0], "GGA")) {
+        strcpy(GGA.latitude, argv[2]);
+        ggaFlag = true;
         }
         // Reset parser
-        Serial.println("Reset Parser");
+        // Serial.println("Reset Parser");
         gotCR = false;
         gotLF = false;
         gotDollar = false;
         memset(msgBuf, 0, 384);
         msgBufLen = 0;
     }
+    return (ggaFlag);
 }
