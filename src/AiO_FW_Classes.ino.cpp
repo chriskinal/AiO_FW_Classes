@@ -8,40 +8,29 @@ constexpr int gpsBufferSz = 384;   // Need larger buffer to handle INS messages 
 uint8_t GPS1rxbuffer[gpsBufferSz];
 uint8_t GPS1txbuffer[gpsBufferSz];
 
-
-// um982 gps1(&Serial5);
 um982 gps1(&SerialGPS1);
+
+void myGGAHandler(const GGA_DATA &gga)
+{
+  Serial.println(gps1.GGA.latitude);
+  Serial.println(gps1.GGA.longitude);
+}
 
 void setup()
 {
-  delay(5000);
+  delay(3000);
   Serial.begin(115200);
   delay(10);
   SerialGPS1.begin(baudGPS);
   SerialGPS1.addMemoryForRead(GPS1rxbuffer, sizeof(GPS1rxbuffer));
   SerialGPS1.addMemoryForWrite(GPS1txbuffer, sizeof(GPS1txbuffer));
+
+  gps1.onGGA(myGGAHandler);
   
   //ethernet_init();
   //mongoose_init();
 }
 
 void loop() {
-  if (gps1.poll() == "GGA"){
-    Serial.println(millis());
-    // Serial.print("Got GGA:");
-    // Serial.println(millis());
-    // Serial.println(gps1.GGA.fixTime);
-  }
-  if (gps1.poll() == "VTG")
-  {
-    Serial.print("Got VTG: ");
-    Serial.println(millis());
-    Serial.println(gps1.VTG.heading);
-  }
-  if (gps1.poll() == "HPR")
-  {
-    Serial.print("Got HPR: ");
-    Serial.println(millis());
-    Serial.println(gps1.HPR.roll);
-  }
+  gps1.poll();
 }

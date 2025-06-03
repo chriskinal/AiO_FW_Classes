@@ -1,99 +1,95 @@
-#include"Arduino.h"
+#include "Arduino.h"
 #include "um982.h"
 
-um982::um982(Stream* gpsPort) : gpsPort(gpsPort) {}
+um982::um982(Stream *gpsPort) : gpsPort(gpsPort) {}
 
-const char* um982::poll(){
-    retVal = 0;
+    void um982::poll()
+{
     if (gpsPort->available())
     {
         char inChar = gpsPort->read();
         switch (inChar)
         {
-            case '$':
-                msgBuf[msgBufLen] = inChar;
-                msgBufLen++;
-                gotDollar = true;
-                break;
-            case '\r':
-                msgBuf[msgBufLen] = inChar;
-                msgBufLen++;
-                gotCR = true;
-                gotDollar = false;
-                break;
-            case '\n':
-                msgBuf[msgBufLen] = inChar;
-                msgBufLen++;
-                gotLF = true;
-                gotDollar = false;
-                break;
-            default:
-                if (gotDollar)
-                {
-                    msgBuf[msgBufLen] = inChar;
-                    msgBufLen++;
-                }
-                break;
+        case '$':
+            if (msgBufLen < MSG_BUF_SIZE - 1)
+            {
+                msgBuf[msgBufLen++] = inChar;
+            }
+            gotDollar = true;
+            break;
+        case '\r':
+            if (msgBufLen < MSG_BUF_SIZE - 1)
+            {
+                msgBuf[msgBufLen++] = inChar;
+            }
+            gotCR = true;
+            gotDollar = false;
+            break;
+        case '\n':
+            if (msgBufLen < MSG_BUF_SIZE - 1)
+            {
+                msgBuf[msgBufLen++] = inChar;
+            }
+            gotLF = true;
+            gotDollar = false;
+            break;
+        default:
+            if (gotDollar && msgBufLen < MSG_BUF_SIZE - 1)
+            {
+                msgBuf[msgBufLen++] = inChar;
+            }
+            break;
         }
     }
-    if ( gotCR && gotLF){
-        char *argv[25]; // Max 25 arguments
+
+    if (gotCR && gotLF)
+    {
+        msgBuf[msgBufLen] = '\0'; // Null-terminate buffer
+        char *argv[25] = {nullptr};
         int argc = 0;
         char *bufptr = msgBuf;
         argv[argc] = strsep(&bufptr, "*;,");
-        while ((argv[argc] != NULL) && (argc < 24))
+        while (argv[argc] != nullptr && argc < 24)
         {
             argc++;
             argv[argc] = strsep(&bufptr, "*;,");
         }
-        // for ( int i = 0; i <= argc - 1; i++)
-        // {
-        //     Serial.println(argv[i]);
-        // }
-        if (strstr(argv[0], "GGA")) {
-        strcpy(GGA.fixTime, argv[1]);
-        strcpy(GGA.latitude, argv[2]);
-        strcpy(GGA.latNS, argv[3]);
-        strcpy(GGA.longitude, argv[4]);
-        strcpy(GGA.lonEW, argv[5]);
-        strcpy(GGA.fixQuality, argv[6]);
-        strcpy(GGA.numSats, argv[7]);
-        strcpy(GGA.HDOP, argv[8]);
-        strcpy(GGA.altitude, argv[9]);
-        strcpy(GGA.ageDGPS, argv[13]);
-        retVal = 1;
-        }
-        if (strstr(argv[0], "VTG"))
+
+        if (argc > 13 && argv[0] && strstr(argv[0], "GGA"))
         {
-            strcpy(VTG.heading, argv[1]);
-            strcpy(VTG.speedKnots, argv[5]);
-            VTG.speed = atof(argv[5]) * 1852 / 3600; // m/s
-            retVal = 2;
+            strncpy(GGA.fixTime, argv[1] ? argv[1] : "", sizeof(GGA.fixTime) - 1);
+            strncpy(GGA.latitude, argv[2] ? argv[2] : "", sizeof(GGA.latitude) - 1);
+            strncpy(GGA.latNS, argv[3] ? argv[3] : "", sizeof(GGA.latNS) - 1);
+            strncpy(GGA.longitude, argv[4] ? argv[4] : "", sizeof(GGA.longitude) - 1);
+            strncpy(GGA.lonEW, argv[5] ? argv[5] : "", sizeof(GGA.lonEW) - 1);
+            strncpy(GGA.fixQuality, argv[6] ? argv[6] : "", sizeof(GGA.fixQuality) - 1);
+            strncpy(GGA.numSats, argv[7] ? argv[7] : "", sizeof(GGA.numSats) - 1);
+            strncpy(GGA.HDOP, argv[8] ? argv[8] : "", sizeof(GGA.HDOP) - 1);
+            strncpy(GGA.altitude, argv[9] ? argv[9] : "", sizeof(GGA.altitude) - 1);
+            strncpy(GGA.ageDGPS, argv[13] ? argv[13] : "", sizeof(GGA.ageDGPS) - 1);
+            if (ggaCallback)
+                ggaCallback(GGA);
         }
-        if (strstr(argv[0], "HPR"))
+        else if (argc > 5 && argv[0] && strstr(argv[0], "VTG"))
         {
-            strcpy(HPR.heading, argv[2]);
-            strcpy(HPR.roll, argv[3]);
-            HPR.solQuality = atoi(argv[5]);
-            retVal = 3;
+            strncpy(VTG.heading, argv[1] ? argv[1] : "", sizeof(VTG.heading) - 1);
+            strncpy(VTG.speedKnots, argv[5] ? argv[5] : "", sizeof(VTG.speedKnots) - 1);
+            VTG.speed = argv[5] ? atof(argv[5]) * 1852 / 3600 : 0.0f; // m/s
+            if (vtgCallback)
+                vtgCallback(VTG);
         }
-        // Reset parser
-        // Serial.println("Reset Parser");
-        gotCR = false;
-        gotLF = false;
-        gotDollar = false;
-        memset(msgBuf, 0, 384);
+        else if (argc > 5 && argv[0] && strstr(argv[0], "HPR"))
+        {
+            strncpy(HPR.heading, argv[2] ? argv[2] : "", sizeof(HPR.heading) - 1);
+            strncpy(HPR.roll, argv[3] ? argv[3] : "", sizeof(HPR.roll) - 1);
+            HPR.solQuality = argv[5] ? atoi(argv[5]) : 0;
+            if (hprCallback)
+                hprCallback(HPR);
+        }
+
+        // Reset parser state
+        gotCR = gotLF = gotDollar = false;
+        memset(msgBuf, 0, sizeof(msgBuf));
         msgBufLen = 0;
-    }
-    switch (retVal)
-    {
-    case 0:
-        return "";
-    case 1:
-        return "GGA";
-    case 2:
-        return "VTG";
-    case 3:
-        return "HPR";
     }
 }
